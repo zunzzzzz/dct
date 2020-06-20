@@ -1,0 +1,11 @@
+rule cxx
+  command = g++ $flags $in -o $out
+
+rule nvcc
+  command = nvcc $flags $in -o $out
+
+flags = -O3 -std=c++11 -lpng
+
+build hw3: nvcc hw3.cu
+build sobel: cxx sobel.cc
+build test: nvcc test.cu
