@@ -29,7 +29,6 @@ void DCT(unsigned char* src_img, double* dct_img, unsigned height, unsigned widt
                 else cv = 1;
                 for(int x = width_iter; x < width_iter + 8; x++) {
                     for(int y = height_iter; y <  height_iter + 8; y++) {
-
                         double R, G, B;
                         R = cu * cv * src_img[channels * (width * y + x) + 0] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
                         G = cu * cv * src_img[channels * (width * y + x) + 1] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
@@ -121,6 +120,6 @@ int main(int argc, char** argv) {
     cudaMemcpy(dst_img_HOST, dst_img_GPU, height * width * channels * sizeof(unsigned char), cudaMemcpyDeviceToHost);
     write_png(argv[2], dst_img_HOST, height, width, channels);
     end = clock();
-    printf("%f\n", ((double)(end - start) / CLOCKS_PER_SEC));
+    printf("execution time = %f\n", ((double)(end - start) / CLOCKS_PER_SEC));
     return 0;
 }
