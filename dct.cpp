@@ -74,25 +74,59 @@ int main(int argc, char** argv) {
             }
         }
     }
-    // quantize
+    // quantization part
     unsigned luminance[8][8] =
-    {16, 11, 10, 16, 24, 40, 51, 61,
-     12, 12, 14, 19, 26, 58, 60, 55,
-     14, 13, 16, 24, 40, 57, 69, 56,
-     14, 17, 22, 29, 51, 87, 80, 62,
-     18, 22, 37, 56, 68, 109, 103, 77,
-     24, 35, 55, 64, 81, 104, 113, 92,
-     49, 64, 78, 87, 103, 121, 120, 101,
-     72, 92, 95, 95 ,112, 100, 103, 99};
+    {
+        16, 11, 10, 16, 24, 40, 51, 61,
+        12, 12, 14, 19, 26, 58, 60, 55,
+        14, 13, 16, 24, 40, 57, 69, 56,
+        14, 17, 22, 29, 51, 87, 80, 62,
+        18, 22, 37, 56, 68, 109, 103, 77,
+        24, 35, 55, 64, 81, 104, 113, 92,
+        49, 64, 78, 87, 103, 121, 120, 101,
+        72, 92, 95, 95 ,112, 100, 103, 99
+    };
      unsigned chrominance[8][8] =
-    {17, 18, 24, 47, 99, 99, 99, 99,
-     18, 21, 26, 66, 99, 99, 99, 99,
-     24, 26, 56, 99, 99, 99, 99, 99,
-     47, 66, 99, 99, 99, 99, 99, 99,
-     99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99, 99, 99, 99, 99, 99,
-     99, 99, 99, 99, 993,99, 99, 99,
-     99, 99, 99, 99 ,992,99, 99, 99};
+    {
+        17, 18, 24, 47, 99, 99, 99, 99,
+        18, 21, 26, 66, 99, 99, 99, 99,
+        24, 26, 56, 99, 99, 99, 99, 99,
+        47, 66, 99, 99, 99, 99, 99, 99,
+        99, 99, 99, 99, 99, 99, 99, 99,
+        99, 99, 99, 99, 99, 99, 99, 99,
+        99, 99, 99, 99, 993,99, 99, 99,
+        99, 99, 99, 99 ,992,99, 99, 99
+    };
+    // quantize
+    for(int width_iter = 0; width_iter < width; width_iter += 8) {
+        for(int height_iter = 0; height_iter < height; height_iter += 8) {
+
+            for(int u = width_iter; u < width_iter + 8; u++) {
+                for(int v = height_iter; v < height_iter + 8; v++) {
+                    dct_img_HOST[channels * (width * v + u) + 0] = abs(round(dct_img_HOST[channels * (width * v + u) + 0] / luminance[u % 8][v % 8]));
+                    dct_img_HOST[channels * (width * v + u) + 1] = abs(round(dct_img_HOST[channels * (width * v + u) + 1] / chrominance[u % 8][v % 8]));
+                    dct_img_HOST[channels * (width * v + u) + 2] = abs(round(dct_img_HOST[channels * (width * v + u) + 2] / chrominance[u % 8][v % 8]));
+                    // if(width_iter == 0 && height_iter == 0) printf("%f ", dct_img_HOST[channels * (width * v + u) + 0]);
+                }
+                // if(width_iter == 0 && height_iter == 0) printf("\n");
+            }
+        }
+    }
+    for(int width_iter = 0; width_iter < width; width_iter += 8) {
+        for(int height_iter = 0; height_iter < height; height_iter += 8) {
+
+            for(int u = width_iter; u < width_iter + 8; u++) {
+                for(int v = height_iter; v < height_iter + 8; v++) {
+                    dct_img_HOST[channels * (width * v + u) + 0] = abs(round(dct_img_HOST[channels * (width * v + u) + 0] * luminance[u % 8][v % 8]));
+                    dct_img_HOST[channels * (width * v + u) + 1] = abs(round(dct_img_HOST[channels * (width * v + u) + 1] * chrominance[u % 8][v % 8]));
+                    dct_img_HOST[channels * (width * v + u) + 2] = abs(round(dct_img_HOST[channels * (width * v + u) + 2] * chrominance[u % 8][v % 8]));
+                    // if(width_iter == 0 && height_iter == 0) printf("%f ", dct_img_HOST[channels * (width * v + u) + 0]);
+                }
+                // if(width_iter == 0 && height_iter == 0) printf("\n");
+            }
+        }
+    }
+    // dequantize
     // idct
     for(int width_iter = 0; width_iter < width; width_iter += 8) {
         for(int height_iter = 0; height_iter < height; height_iter += 8) {
