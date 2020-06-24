@@ -37,13 +37,18 @@ int main(int argc, char** argv) {
     // rgb to ycbcr
     for(int width_iter = 0; width_iter < width; width_iter++) {
         for(int height_iter = 0; height_iter < height; height_iter++) {
-            unsigned R, G, B;
-            R = src_img_HOST[channels * (width * height_iter + width_iter) + 0];
-            G = src_img_HOST[channels * (width * height_iter + width_iter) + 1];
-            B = src_img_HOST[channels * (width * height_iter + width_iter) + 2];
-            src_img_HOST[channels * (width * height_iter + width_iter) + 0] = 0.299 * R + 0.578 * G + 0.114 * B;
-            src_img_HOST[channels * (width * height_iter + width_iter) + 1] = 0.564 * (B - src_img_HOST[channels * (width * height_iter + width_iter) + 0]);
-            src_img_HOST[channels * (width * height_iter + width_iter) + 2] = 0.713 * (R - src_img_HOST[channels * (width * height_iter + width_iter) + 0]);
+            double R, G, B, Y, Cb, Cr;
+            R = (double) src_img_HOST[channels * (width * height_iter + width_iter) + 0];
+            G = (double) src_img_HOST[channels * (width * height_iter + width_iter) + 1];
+            B = (double) src_img_HOST[channels * (width * height_iter + width_iter) + 2];
+            // printf("before = %d\n", src_img_HOST[channels * (width * height_iter + width_iter) + 0]);
+            // printf("tmp = %f\n", 0.299 * R + 0.578 * G + 0.114 * B);
+            Y = 0.257 * R + 0.564 * G + 0.098 * B + 16;
+            Cb = -0.148 * R - 0.291 * G + 0.439 * B + 128;
+            Cr = 0.439 * R - 0.368 * G - 0.071 * B + 128;
+            src_img_HOST[channels * (width * height_iter + width_iter) + 0] = Y;
+            src_img_HOST[channels * (width * height_iter + width_iter) + 1] = Cb;
+            src_img_HOST[channels * (width * height_iter + width_iter) + 2] = Cr;
         }
     }
     // dct
@@ -112,6 +117,7 @@ int main(int argc, char** argv) {
             }
         }
     }
+    // dequantize
     for(int width_iter = 0; width_iter < width; width_iter += 8) {
         for(int height_iter = 0; height_iter < height; height_iter += 8) {
 
@@ -126,7 +132,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-    // dequantize
     // idct
     for(int width_iter = 0; width_iter < width; width_iter += 8) {
         for(int height_iter = 0; height_iter < height; height_iter += 8) {
@@ -158,13 +163,16 @@ int main(int argc, char** argv) {
     // ycbcr to rgb
     for(int width_iter = 0; width_iter < width; width_iter++) {
         for(int height_iter = 0; height_iter < height; height_iter++) {
-            unsigned Y, Cb, Cr;
+            double Y, Cb, Cr, R, G, B;
             Y = src_img_HOST[channels * (width * height_iter + width_iter) + 0];
             Cb = src_img_HOST[channels * (width * height_iter + width_iter) + 1];
             Cr = src_img_HOST[channels * (width * height_iter + width_iter) + 2];
-            src_img_HOST[channels * (width * height_iter + width_iter) + 0] = Y + 1.402 * Cr;
-            src_img_HOST[channels * (width * height_iter + width_iter) + 1] = Y - 0.344 * Cb - 0.714 * Cr;
-            src_img_HOST[channels * (width * height_iter + width_iter) + 2] = Y + 1.772 * Cb;
+            R = 1.164 * (Y - 16) + 1.596 * (Cr - 128);
+            G = 1.164 * (Y - 16) - 0.392 * (Cb - 128) - 0.813 * (Cr - 128);
+            B = 1.164 * (Y - 16) + 2.017 * (Cb - 128);
+            src_img_HOST[channels * (width * height_iter + width_iter) + 0] = R;
+            src_img_HOST[channels * (width * height_iter + width_iter) + 1] = G;
+            src_img_HOST[channels * (width * height_iter + width_iter) + 2] = B;
         }
     }
 
