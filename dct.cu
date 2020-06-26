@@ -26,6 +26,14 @@ void DCT(unsigned char* src_img, double* dct_img, unsigned height, unsigned widt
     }
     for(int width_iter = threadIdx.x * 8; width_iter < width; width_iter += blockDim.x * 8) {
         int height_iter = blockIdx.x * 8;
+        unsigned tmp_channel_one[8][8],  tmp_channel_two[8][8], tmp_channel_three[8][8];
+        for(int x = width_iter; x < width_iter + 8; x++) {
+            for(int y = height_iter; y <  height_iter + 8; y++) {
+                tmp_channel_one[x % 8][y % 8] = src_img[channels * (width * y + x) + 0];
+                tmp_channel_two[x % 8][y % 8] = src_img[channels * (width * y + x) + 1];
+                tmp_channel_three[x % 8][y % 8] = src_img[channels * (width * y + x) + 2];
+            }
+        }
         for(int u = width_iter; u < width_iter + 8; u++) {
             for(int v = height_iter; v < height_iter + 8; v++) {
 
@@ -37,9 +45,9 @@ void DCT(unsigned char* src_img, double* dct_img, unsigned height, unsigned widt
                 for(int x = width_iter; x < width_iter + 8; x++) {
                     for(int y = height_iter; y <  height_iter + 8; y++) {
                         double R, G, B;
-                        R = cu * cv * src_img[channels * (width * y + x) + 0] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        G = cu * cv * src_img[channels * (width * y + x) + 1] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        B = cu * cv * src_img[channels * (width * y + x) + 2] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        R = cu * cv * tmp_channel_one[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        G = cu * cv * tmp_channel_two[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        B = cu * cv * tmp_channel_three[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
                         dct_img[channels * (width * v + u) + 0] += R;
                         dct_img[channels * (width * v + u) + 1] += G;
                         dct_img[channels * (width * v + u) + 2] += B;
@@ -62,9 +70,17 @@ void IDCT(double* dct_img, unsigned char* dst_img, unsigned height, unsigned wid
     }
     for(int width_iter = threadIdx.x * 8; width_iter < width; width_iter += blockDim.x * 8) {
         int height_iter = blockIdx.x * 8;
+        double tmp_channel_one[8][8],  tmp_channel_two[8][8], tmp_channel_three[8][8];
+        for(int x = width_iter; x < width_iter + 8; x++) {
+            for(int y = height_iter; y <  height_iter + 8; y++) {
+                tmp_channel_one[x % 8][y % 8] = dct_img[channels * (width * y + x) + 0];
+                tmp_channel_two[x % 8][y % 8] = dct_img[channels * (width * y + x) + 1];
+                tmp_channel_three[x % 8][y % 8] = dct_img[channels * (width * y + x) + 2];
+            }
+        }
         for(int x = width_iter; x < width_iter + 8; x++) {
             for(int y = height_iter; y < height_iter + 8; y++) {
-
+                
                 double cu, cv;
                 for(int u = width_iter; u < width_iter + 8; u++) {
                     for(int v = height_iter; v < height_iter + 8; v++) {
@@ -74,9 +90,9 @@ void IDCT(double* dct_img, unsigned char* dst_img, unsigned height, unsigned wid
                         if(v % 8 == 0) cv = 1 / sqrtf(2);
                         else cv = 1;
                         double R, G, B;
-                        R = cu * cv * dct_img[channels * (width * v + u) + 0] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        G = cu * cv * dct_img[channels * (width * v + u) + 1] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        B = cu * cv * dct_img[channels * (width * v + u) + 2] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        R = cu * cv * tmp_channel_one[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        G = cu * cv * tmp_channel_two[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        B = cu * cv * tmp_channel_three[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
                         dst_img[channels * (width * y + x) + 0] += R;
                         dst_img[channels * (width * y + x) + 1] += G;
                         dst_img[channels * (width * y + x) + 2] += B;
