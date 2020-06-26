@@ -104,8 +104,8 @@ int main(int argc, char** argv) {
         47, 66, 99, 99, 99, 99, 99, 99,
         99, 99, 99, 99, 99, 99, 99, 99,
         99, 99, 99, 99, 99, 99, 99, 99,
-        99, 99, 99, 99, 993,99, 99, 99,
-        99, 99, 99, 99 ,992,99, 99, 99
+        99, 99, 99, 99, 99, 99, 99, 99,
+        99, 99, 99, 99 ,99, 99, 99, 99
     };
     // quantize
     for(int width_iter = 0; width_iter < width; width_iter += 8) {
@@ -248,8 +248,8 @@ int main(int argc, char** argv) {
             }
         }
     }
-    compression_ratio = total_bits / (accu_bits + 8);
-    printf("compression ration = %f\n", compression_ratio);
+    compression_ratio = (double) total_bits / (double) (accu_bits + 24);
+    printf("compression ratio = %f\n", compression_ratio);
     // recover DPCM
     count = 0;
     for(int width_iter = 0; width_iter < width; width_iter += 8) {
