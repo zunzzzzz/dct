@@ -10,7 +10,7 @@ class RLE_DATA
 {
 public:
     unsigned consecutive_zero = 0;
-    unsigned value;
+    int value;
 };
 int main(int argc, char** argv) {
     assert(argc == 3);
@@ -169,6 +169,7 @@ int main(int argc, char** argv) {
             std::vector<RLE_DATA> cb_RLE;
             std::vector<RLE_DATA> cr_RLE;
             RLE_DATA y_tmp, cb_tmp, cr_tmp;
+            // encoding
             for(int iter = 0; iter < 64; iter++) {
                 int u = zig_zag[iter] % 8;
                 int v = zig_zag[iter] / 8;
@@ -209,8 +210,42 @@ int main(int argc, char** argv) {
                     cr_tmp.consecutive_zero = 0;
                 }
             }
-            int partial_bits = 16 * (y_RLE.size() + cb_RLE.size() + cr_RLE.size());
+            int partial_bits = 40 * (y_RLE.size() + cb_RLE.size() + cr_RLE.size());
             accu_bits += partial_bits;
+            // decoding
+            // reset to zero to test 
+            for(int iter = 0; iter < 64; iter++) {
+                int u = zig_zag[iter] % 8;
+                int v = zig_zag[iter] / 8;
+                
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 0] = 0;
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 1] = 0;
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 2] = 0;
+            }
+            // y
+            int index = 0;
+            for(int iter = 0; iter < y_RLE.size(); iter++) {
+                index += y_RLE[iter].consecutive_zero + 1;
+                int u = zig_zag[index] % 8;
+                int v = zig_zag[index] / 8;
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 0] = y_RLE[iter].value;
+            }
+            // cb
+            index = 0;
+            for(int iter = 0; iter < cb_RLE.size(); iter++) {
+                index += cb_RLE[iter].consecutive_zero + 1;
+                int u = zig_zag[index] % 8;
+                int v = zig_zag[index] / 8;
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 1] = cb_RLE[iter].value;
+            }
+            // cr
+            index = 0;
+            for(int iter = 0; iter < cr_RLE.size(); iter++) {
+                index += cr_RLE[iter].consecutive_zero + 1;
+                int u = zig_zag[index] % 8;
+                int v = zig_zag[index] / 8;
+                dct_img_HOST[channels * (width * (v + height_iter) + (u + width_iter)) + 2] = cr_RLE[iter].value;
+            }
         }
     }
     compression_ratio = total_bits / (accu_bits + 8);
