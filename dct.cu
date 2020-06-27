@@ -28,7 +28,7 @@ void DCT(unsigned char* src_img, double* dct_img, unsigned height, unsigned widt
         int height_iter = blockIdx.x * 8;
         unsigned tmp_channel_one[8][8],  tmp_channel_two[8][8], tmp_channel_three[8][8];
         for(int x = width_iter; x < width_iter + 8; x++) {
-            for(int y = height_iter; y <  height_iter + 8; y++) {
+            for(int y = height_iter; y < height_iter + 8; y++) {
                 tmp_channel_one[x % 8][y % 8] = src_img[channels * (width * y + x) + 0];
                 tmp_channel_two[x % 8][y % 8] = src_img[channels * (width * y + x) + 1];
                 tmp_channel_three[x % 8][y % 8] = src_img[channels * (width * y + x) + 2];
@@ -71,11 +71,11 @@ void IDCT(double* dct_img, unsigned char* dst_img, unsigned height, unsigned wid
     for(int width_iter = threadIdx.x * 8; width_iter < width; width_iter += blockDim.x * 8) {
         int height_iter = blockIdx.x * 8;
         double tmp_channel_one[8][8],  tmp_channel_two[8][8], tmp_channel_three[8][8];
-        for(int x = width_iter; x < width_iter + 8; x++) {
-            for(int y = height_iter; y <  height_iter + 8; y++) {
-                tmp_channel_one[x % 8][y % 8] = dct_img[channels * (width * y + x) + 0];
-                tmp_channel_two[x % 8][y % 8] = dct_img[channels * (width * y + x) + 1];
-                tmp_channel_three[x % 8][y % 8] = dct_img[channels * (width * y + x) + 2];
+        for(int u = width_iter; u < width_iter + 8; u++) {
+            for(int v = height_iter; v < height_iter + 8; v++) {
+                tmp_channel_one[u % 8][v % 8] = dct_img[channels * (width * v + u) + 0];
+                tmp_channel_two[u % 8][v % 8] = dct_img[channels * (width * v + u) + 1];
+                tmp_channel_three[u % 8][v % 8] = dct_img[channels * (width * v + u) + 2];
             }
         }
         for(int x = width_iter; x < width_iter + 8; x++) {
@@ -90,9 +90,9 @@ void IDCT(double* dct_img, unsigned char* dst_img, unsigned height, unsigned wid
                         if(v % 8 == 0) cv = 1 / sqrtf(2);
                         else cv = 1;
                         double R, G, B;
-                        R = cu * cv * tmp_channel_one[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        G = cu * cv * tmp_channel_two[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
-                        B = cu * cv * tmp_channel_three[x % 8][y % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        R = cu * cv * tmp_channel_one[u % 8][v % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        G = cu * cv * tmp_channel_two[u % 8][v % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
+                        B = cu * cv * tmp_channel_three[u % 8][v % 8] * cosine[u % 8][x % 8] * cosine[v % 8][y % 8] / 4;
                         dst_img[channels * (width * y + x) + 0] += R;
                         dst_img[channels * (width * y + x) + 1] += G;
                         dst_img[channels * (width * y + x) + 2] += B;
@@ -129,7 +129,8 @@ int main(int argc, char** argv) {
     
     printf("width = %d, height = %d, channel = %d\n", width, height, channels);
     
-
+    threads_per_block = 256;
+    num_of_blocks = height / 8;
 
     // rgb to ycbcr
     for(int width_iter = 0; width_iter < width; width_iter++) {
@@ -149,13 +150,10 @@ int main(int argc, char** argv) {
         }
     }
     // dct
-    threads_per_block = 256;
-    num_of_blocks = height / 8;
     cudaMemcpy(src_img_GPU, src_img_HOST, height * width * channels * sizeof(unsigned char), cudaMemcpyHostToDevice);
     cudaMemcpy(dct_img_GPU, dct_img_HOST, height * width * channels * sizeof(double), cudaMemcpyHostToDevice);
     DCT<<<num_of_blocks, threads_per_block>>>(src_img_GPU, dct_img_GPU, height, width, channels);
     cudaMemcpy(dct_img_HOST, dct_img_GPU, height * width * channels * sizeof(double), cudaMemcpyDeviceToHost);
-    cudaDeviceSynchronize();
     // quantization part
     unsigned luminance[8][8] =
     {
@@ -188,9 +186,7 @@ int main(int argc, char** argv) {
                     dct_img_HOST[channels * (width * v + u) + 0] = round(dct_img_HOST[channels * (width * v + u) + 0] / luminance[u % 8][v % 8]);
                     dct_img_HOST[channels * (width * v + u) + 1] = round(dct_img_HOST[channels * (width * v + u) + 1] / chrominance[u % 8][v % 8]);
                     dct_img_HOST[channels * (width * v + u) + 2] = round(dct_img_HOST[channels * (width * v + u) + 2] / chrominance[u % 8][v % 8]);
-                    // if(width_iter == 0 && height_iter == 0) printf("%f ", dct_img_HOST[channels * (width * v + u) + 0]);
                 }
-                // if(width_iter == 0 && height_iter == 0) printf("\n");
             }
         }
     }
@@ -350,9 +346,7 @@ int main(int argc, char** argv) {
                     dct_img_HOST[channels * (width * v + u) + 0] = round(dct_img_HOST[channels * (width * v + u) + 0] * luminance[u % 8][v % 8]);
                     dct_img_HOST[channels * (width * v + u) + 1] = round(dct_img_HOST[channels * (width * v + u) + 1] * chrominance[u % 8][v % 8]);
                     dct_img_HOST[channels * (width * v + u) + 2] = round(dct_img_HOST[channels * (width * v + u) + 2] * chrominance[u % 8][v % 8]);
-                    // if(width_iter == 0 && height_iter == 0) printf("%f ", dct_img_HOST[channels * (width * v + u) + 0]);
                 }
-                // if(width_iter == 0 && height_iter == 0) printf("\n");
             }
         }
     }
